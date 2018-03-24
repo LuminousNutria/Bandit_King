@@ -1,0 +1,162 @@
+"""
+Generates a basic map for combat
+"""
+
+__Author__ = "LuminousNutria"
+__date__ = "3/23/18"
+
+import pygame as pg
+import copy
+import random
+
+TREE_FRACTION   = 0.33
+ROCK_FRACTION   = 0.33
+TILE_SIZE       = 16
+SCREEN_SIZE     = (1600, 900)
+FPS             = 60
+
+WIDTH       = 80
+HEIGHT      = 56
+TREES       = 400
+ROCKS       = 120
+ROADWIDTH   = 10
+
+def createMap(width, height, trees, rocks, roadWidth):
+    """
+    Creates a combat map
+
+    :param width: int; 20-60
+        Width of the map in squares
+
+    :param height: int; 20-60
+        Height of the map in squares
+
+    :param trees: int; 0 to TREE_FRACTION of map
+        Number of rocks on the map.
+
+    :param rocks: int; 0 to ROCK_FRACTION of map
+        Number of rocks on the map.
+
+    :param roadWidth: int; 0-10
+        Width of the road in the map.
+        Pass zero to remove the road.
+
+    :return:
+        List matrix of map
+    """
+
+    mapMatrix = []
+    rowList = [0] * height
+    locations = set()
+
+
+    # error checking
+    if trees > width * height * TREE_FRACTION:
+        print("ERROR: TOO MANY TREES")
+        return 0
+    elif rocks > width * height * ROCK_FRACTION:
+        print("ERROR: TOO MANY ROCKS")
+        return 0
+
+    # create a blank map full of grass
+    for i in range(width):
+        row = copy.copy(rowList)
+        mapMatrix.append(row)
+
+    # add trees to map:
+    for i in range(trees):
+        rowIndex = random.randint(0, height - 1)
+        colIndex = random.randint(0, width - 1)
+        # check for duplicate placement
+        while (colIndex, rowIndex) in locations:
+            rowIndex = random.randint(0, height - 1)
+            colIndex = random.randint(0, width - 1)
+
+        mapMatrix[colIndex][rowIndex] = 1
+        locations.add((rowIndex, colIndex))
+
+    # add rocks to map:
+    for i in range(rocks):
+        rowIndex = random.randint(0, height - 1)
+        colIndex = random.randint(0, width - 1)
+        # check for duplicate placement
+        while (colIndex, rowIndex) in locations:
+            rowIndex = random.randint(0, height - 1)
+            colIndex = random.randint(0, width - 1)
+
+        mapMatrix[colIndex][rowIndex] = 2
+        locations.add((colIndex, rowIndex))
+
+    # add the road
+    if roadWidth > 0:
+        # start at the leftmost side of the road
+        road = (width // 2) - (roadWidth // 2)
+        ct = 0
+        # add columns of road tiles
+        while ct < roadWidth:
+            mapMatrix[road + ct] = [3] * height
+            ct += 1
+
+    return mapMatrix
+
+
+def showMap(screen, mapMatrix):
+    """
+    :param screen: pygame screen object
+    images are blitted to this
+    :param mapMatrix: list matrix
+    contains the map matrix
+    """
+
+    grass = pg.image.load("grass.png").convert()
+    tree  = pg.image.load("tree.png").convert()
+    rock  = pg.image.load("rock.png").convert()
+    road  = pg.image.load("road.png").convert()
+    imageDict = {0: grass, 1: tree, 2: rock, 3: road}
+
+    for x in range(len(mapMatrix)):
+        for y in range(len(mapMatrix[x])):
+            mapVal = mapMatrix[x][y]
+            image = imageDict[mapVal]
+            screen.blit(image, [x * TILE_SIZE, y * TILE_SIZE])
+
+
+def main():
+    """
+    calls functions to allow the game to run
+    """
+
+    done = False
+
+    # initialize pygame
+    pg.init()
+
+    # make screen object
+    screen = pg.display.set_mode(SCREEN_SIZE)
+
+    pg.display.set_caption("Bandit King")
+
+    # manages FPS
+    clock = pg.time.Clock()
+
+    # creates map
+    mapMatrix = createMap(WIDTH, HEIGHT, TREES, ROCKS, ROADWIDTH)
+
+    while not done:
+        # main event loop
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                done = True
+
+        # --- game logic
+
+        showMap(screen, mapMatrix)
+
+        pg.display.flip()
+
+        clock.tick(FPS)
+
+    pg.quit()
+
+if __name__ == "__main__":
+    main()
